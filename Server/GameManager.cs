@@ -36,7 +36,7 @@ namespace ConsoleRummy
                     return player.Nickname;
                 }
             }
-            return "Unknown player";
+            return "Nieznany gracz";
         }
     }
 }

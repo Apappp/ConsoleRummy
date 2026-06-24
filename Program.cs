@@ -55,16 +55,12 @@ class Program
             
             if (isGameStarted)
             {
-                Console.WriteLine($"[Serwer] Odrzucono gracza {e.Client.IpPort} - gra już trwa.");
-                
-                // Wysyłamy mu powód wyrzucenia (żeby jego klient wiedział, co się stało)
                 byte[] rejectMsg = Encoding.UTF8.GetBytes("BŁĄD|Gra już się rozpoczęła. Nie możesz dołączyć.");
                 await server.SendAsync(e.Client.Guid, rejectMsg);
                 
                 await server.DisconnectClientAsync(e.Client.Guid);
                 return;
             }
-
         };
 
         server.Events.MessageReceived += async (sender, e) =>
@@ -72,26 +68,39 @@ class Program
             string message = Encoding.UTF8.GetString(e.Data);
             
             
-            if (message.StartsWith("JOIN|"))
+            if (message.StartsWith("JOIN"))
             {
                 string playerName = message.Split('|')[1];
                 string playerId = e.Client.Guid.ToString(); 
 
-                Console.WriteLine($"[Serwer] Gracz dołączył: {playerName} (ID: {playerId})");
+                //Console.WriteLine($"[Serwer] Gracz dołączył: {playerName} (ID: {playerId})");
                 
                 table.Players.Add(new Player(playerId, playerName));
 
                 foreach (var client in server.ListClients())
                 {
-                    byte[] info = Encoding.UTF8.GetBytes($"{playerName} dołączył do gry");
+                    byte[] info = Encoding.UTF8.GetBytes($"MESSAGE|{playerName} dołączył do gry!");
                     await server.SendAsync(client.Guid, info);
+                }
+            }
+            else if (message.StartsWith("/"))
+            {
+                if((message == "/start") || (e.Client.Guid == adminId))
+                {
+                    table.ChangeState(new DealingState());
+                }
+                else
+                {
+                    string textToSend = "MESSAGE|Nieznana komenda";
+                    byte[] bytesToSend = Encoding.UTF8.GetBytes(textToSend);
+                    await server.SendAsync(e.Client.Guid, bytesToSend);
                 }
             }
             else
             {
                 foreach (var client in server.ListClients())
                 {
-                    string textToSend = $"{table.GetPlayerNameById(e.Client.Guid.ToString())}): {message}";
+                    string textToSend = $"MESSAGE|{table.GetPlayerNameById(e.Client.Guid.ToString())}: {message}";
                     byte[] bytesToSend = Encoding.UTF8.GetBytes(textToSend);
                     await server.SendAsync(client.Guid, bytesToSend);
                 }
@@ -113,7 +122,6 @@ class Program
         };
         */
         server.Start();
-        Console.WriteLine("[Serwer] Działa w tle! Podłączam Twojego lokalnego klienta...\n");
 
         await RunClientLoop("127.0.0.1", hostName, true);
     }
@@ -137,13 +145,23 @@ class Program
 
         client.Events.ServerConnected += (sender, e) => 
         {
-            Console.WriteLine("[Klient] Udało się połączyć z Serwerem!");
+            Console.WriteLine("Udało się połączyć z Serwerem!");
         };
 
         client.Events.MessageReceived += (sender, e) => 
         {
             string message = Encoding.UTF8.GetString(e.Data);
-            Console.WriteLine($"\n>> [STÓŁ]: {message}");
+            if (message.StartsWith("MESSAGE|"))
+            {
+                string trimmedMessage = message.Split('|')[1];
+                Console.WriteLine($"\n{trimmedMessage}");
+
+            }
+            else
+            {
+                Console.WriteLine($"\n>> [STÓŁ]: {message}");
+                
+            }
             Console.Write("Wpisz komendę: ");
         };
 
@@ -161,7 +179,6 @@ class Program
             {
                 Console.Write("Wpisz komendę: ");
                 string input = Console.ReadLine() ?? "";
-
                 if (input.ToLower() == "wyjscie")
                 {
                     break;
@@ -170,7 +187,6 @@ class Program
                 if (!string.IsNullOrWhiteSpace(input))
                 {
                     byte[] data = Encoding.UTF8.GetBytes(input);
-                    // ZMIANA: Używamy SendAsync
                     await client.SendAsync(data);
                 }
             }
