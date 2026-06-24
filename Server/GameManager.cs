@@ -8,6 +8,8 @@ namespace ConsoleRummy
     {
         private IGameState CurrentState;
         public List<Player> Players;
+        public ICardDeck deck;
+        public List<Card> DiscardPile;
 
         public GameManager()
         {
@@ -37,6 +39,16 @@ namespace ConsoleRummy
                 }
             }
             return "Nieznany gracz";
+        }
+
+        public void ShufflePlayers()
+        {
+            Random rng = new Random();
+            Players = Players.OrderBy(player => rng.Next()).ToList();
+            for(int i = 0; i < Players.Count; i++)
+            {
+                Players[i].Seat = i + 1;
+            }
         }
     }
 }

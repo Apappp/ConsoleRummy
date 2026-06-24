@@ -5,11 +5,12 @@ namespace ConsoleRummy
     public class Player
     {
         public string NetworkId {get; private set; }
-        public string Nickname {get; private set;}
+        public string Nickname {get; private set; } 
+        public int Seat {get; set; }
 
-        public Player(string id, string name)
+        public Player(string networkId, string name)
         {
-            NetworkId = id;
+            NetworkId = networkId;
             Nickname = name;
         }
     }

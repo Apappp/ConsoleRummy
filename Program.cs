@@ -12,7 +12,7 @@ class Program
         while (true)
         {
             Console.Clear();
-            Console.WriteLine("=== REMIK MULTIPLAYER ===");
+            Console.WriteLine("--- REMIK MULTIPLAYER ---");
             Console.WriteLine("1. Stwórz grę");
             Console.WriteLine("2. Dołącz do gry");
             Console.WriteLine("3. Wyjście z programu");
@@ -49,6 +49,7 @@ class Program
         bool isGameStarted = false;
 
         GameManager table = new GameManager();
+        List<Player> lobbyPlayers = new List<Player>();
         
         server.Events.ClientConnected += async (sender, e) =>
         {
@@ -75,7 +76,7 @@ class Program
 
                 //Console.WriteLine($"[Serwer] Gracz dołączył: {playerName} (ID: {playerId})");
                 
-                table.Players.Add(new Player(playerId, playerName));
+                lobbyPlayers.Add(new Player(playerId, playerName));
 
                 foreach (var client in server.ListClients())
                 {
@@ -87,6 +88,14 @@ class Program
             {
                 if((message == "/start") || (e.Client.Guid == adminId))
                 {
+                    if(lobbyPlayers.Count < 2)
+                    {
+                        byte[] info = Encoding.UTF8.GetBytes($"Niewystarczająca ilość graczy.");
+                        await server.SendAsync(e.Client.Guid, info);
+                        return;
+                    }
+
+                    table.Players = lobbyPlayers;
                     table.ChangeState(new DealingState());
                 }
                 else
@@ -100,7 +109,7 @@ class Program
             {
                 foreach (var client in server.ListClients())
                 {
-                    string textToSend = $"MESSAGE|{table.GetPlayerNameById(e.Client.Guid.ToString())}: {message}";
+                    string textToSend = $"MESSAGE|{lobbyPlayers.Find(x => x.NetworkId == e.Client.Guid.ToString())?.Nickname}: {message}";
                     byte[] bytesToSend = Encoding.UTF8.GetBytes(textToSend);
                     await server.SendAsync(client.Guid, bytesToSend);
                 }
