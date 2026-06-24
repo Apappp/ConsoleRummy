@@ -8,8 +8,9 @@ namespace ConsoleRummy
     {
         private IGameState CurrentState;
         public List<Player> Players;
-        public ICardDeck deck;
-        public List<Card> DiscardPile;
+        public ICardDeck Deck;
+        public List<Card> DiscardPile {get; private set;} = new List<Card>();
+        public int CurrentPlayerSeat {get; set;} = 1;
 
         public GameManager()
         {
@@ -41,6 +42,22 @@ namespace ConsoleRummy
             return "Nieznany gracz";
         }
 
+        public LocalGameState GetStateForPlayer(Guid networkId)
+        {
+            Player player = Players.First(p => p.NetworkId == networkId.ToString());
+            
+            if (player == null) return null; 
+
+            return new LocalGameState
+            {
+                Seat = player.Seat,
+                CurrentTurnPlayerName = Players.First(p => p.Seat == CurrentPlayerSeat).Nickname,
+                MyHand = player.Hand, 
+                TopDiscardCard = DiscardPile.Count > 0 ? DiscardPile.Last() : null,
+                CardsLeftInDeck = Deck.GetCardsCount() 
+            };
+        }
+
         public void ShufflePlayers()
         {
             Random rng = new Random();
@@ -49,6 +66,11 @@ namespace ConsoleRummy
             {
                 Players[i].Seat = i + 1;
             }
+        }
+
+        public void CreateNewDeck()
+        {
+            Deck = (Players.Count > 2) ? new Deck(2) : new Deck();
         }
     }
 }

@@ -7,6 +7,7 @@ namespace ConsoleRummy
         public void EnterState(GameManager table)
         {
             table.ShufflePlayers();
+            table.CreateNewDeck();
         }
         public void HandleState(GameManager table, IPlayerAction action){}
         public void ExitState(GameManager table){}

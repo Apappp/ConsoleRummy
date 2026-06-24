@@ -40,5 +40,10 @@ namespace ConsoleRummy
 
         public void Shuffle(){}
 
+        public int GetCardsCount()
+        {
+            return cards.Count;
+        }
+
     }
 }

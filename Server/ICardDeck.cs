@@ -6,5 +6,6 @@ namespace ConsoleRummy
     {
         Card Draw();
         void Shuffle();
+        int GetCardsCount();
     }
 }

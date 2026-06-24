@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks; // <--- Dodajemy obsługę asynchroniczności (Taski)
 using WatsonTcp;
 
@@ -69,7 +70,7 @@ class Program
             string message = Encoding.UTF8.GetString(e.Data);
             
             
-            if (message.StartsWith("JOIN"))
+            if (message.StartsWith("JOIN|"))
             {
                 string playerName = message.Split('|')[1];
                 string playerId = e.Client.Guid.ToString(); 
@@ -115,24 +116,9 @@ class Program
                 }
             }
         };
-        /*
-        server.Events.MessageReceived += async (sender, e) =>
-        {
-            string message = Encoding.UTF8.GetString(e.Data);
-            
-            foreach (var client in server.ListClients())
-            {
-                string textToSend = $"Gracz {e.Client.IpPort} wykonał ruch: {message}";
-                byte[] bytesToSend = Encoding.UTF8.GetBytes(textToSend);
-                
-                // ZMIANA: Używamy SendAsync
-                await server.SendAsync(client.Guid, bytesToSend);
-            }
-        };
-        */
         server.Start();
 
-        await RunClientLoop("127.0.0.1", hostName, true);
+        await RunClientLoop("127.0.0.1", hostName);
     }
 
     static async Task StartClient()
@@ -145,10 +131,10 @@ class Program
         string ip = Console.ReadLine() ?? "";
         if (string.IsNullOrWhiteSpace(ip)) ip = "127.0.0.1";
 
-        await RunClientLoop(ip, playerName, false);
+        await RunClientLoop(ip, playerName);
     }
 
-    static async Task RunClientLoop(string ipAddress, string playerName, bool isHost)
+    static async Task RunClientLoop(string ipAddress, string playerName)
     {
         WatsonTcpClient client = new WatsonTcpClient(ipAddress, 9000);
 
@@ -178,7 +164,7 @@ class Program
         {
             client.Connect();
 
-            string joinCommand = isHost ? $"JOIN_HOST|{playerName}" : $"JOIN|{playerName}";
+            string joinCommand = $"JOIN|{playerName}";
             byte[] joinData = Encoding.UTF8.GetBytes(joinCommand);
             await client.SendAsync(joinData);
 
@@ -203,6 +189,22 @@ class Program
         catch (Exception ex)
         {
             Console.WriteLine($"\n[BŁĄD] Nie można podłączyć się do serwera. ({ex.Message})");
+        }
+    }
+
+    static async Task BroadcastGameState(WatsonTcpServer server, GameManager table)
+    {
+        foreach (var client in server.ListClients())
+        {
+            LocalGameState personalState = table.GetStateForPlayer(client.Guid);
+            
+            if (personalState != null)
+            {
+                string jsonState = JsonSerializer.Serialize(personalState);
+                
+                byte[] dataToSend = Encoding.UTF8.GetBytes($"STATE_UPDATE|{jsonState}");
+                await server.SendAsync(client.Guid, dataToSend);
+            }
         }
     }
 }
