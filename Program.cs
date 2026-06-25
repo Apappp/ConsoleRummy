@@ -75,6 +75,10 @@ class Program
                 string playerName = message.Split('|')[1];
                 string playerId = e.Client.Guid.ToString(); 
 
+                if (adminId == Guid.Empty)
+                {
+                    adminId = e.Client.Guid;
+                }
                 
                 lobbyPlayers.Add(new Player(playerId, playerName));
 
@@ -84,19 +88,35 @@ class Program
                     await server.SendAsync(client.Guid, info);
                 }
             }
+            else if (message.StartsWith("ACTION|"))
+            {
+                string jsonText = message.Split('|')[1];
+                
+                IPlayerAction? action = JsonSerializer.Deserialize<IPlayerAction>(jsonText);
+
+                if (action != null)
+                {
+                    action.ExecuteAction(table);
+                    await BroadcastGameState(server, table);
+                }
+            }
             else if (message.StartsWith("/"))
             {
-                if((message == "/start") || (e.Client.Guid == adminId))
+                if((message == "/start") && (e.Client.Guid == adminId))
                 {
                     if(lobbyPlayers.Count < 2)
                     {
-                        byte[] info = Encoding.UTF8.GetBytes($"Niewystarczająca ilość graczy.");
+                        byte[] info = Encoding.UTF8.GetBytes($"MESSAGE|Niewystarczająca ilość graczy.");
                         await server.SendAsync(e.Client.Guid, info);
                         return;
                     }
 
+                    byte[] info2 = Encoding.UTF8.GetBytes($"MESSAGE|Rozpoczynanie gry...");
+                    await server.SendAsync(e.Client.Guid, info2);
+                    
                     table.Players = lobbyPlayers;
                     table.ChangeState(new DealingState());
+                    await BroadcastGameState(server, table);
                 }
                 else if(message == "/draw")
                 {
@@ -141,7 +161,9 @@ class Program
     {
         WatsonTcpClient client = new WatsonTcpClient(ipAddress, 9000);
         ConsoleRenderer renderer = new ConsoleRenderer();
+        LocalGameState localGame = new LocalGameState();
         List<string> messages = new List<string>();
+        bool isGameStarted = false;
 
         client.Events.ServerConnected += (sender, e) => 
         {
@@ -155,11 +177,38 @@ class Program
             {
                 string trimmedMessage = message.Split('|')[1];
                 messages.Add(trimmedMessage);
-                renderer.DrawLobbyScreen(messages, playerName);
+                if(!isGameStarted){
+                    renderer.DrawLobbyScreen(messages);
+                }
+                else
+                {
+                    renderer.DrawGameScreen(localGame, messages, playerName);
+                }
             }
-            else
+            else if(message.StartsWith("STATE_UPDATE|"))
             {
-                Console.WriteLine($"\n>> [STÓŁ]: {message}");
+                string jsonText = message.Split('|')[1];
+
+                try
+                {
+                    LocalGameState? gameState = JsonSerializer.Deserialize<LocalGameState>(jsonText);
+
+                    if (gameState != null)
+                    {
+                        isGameStarted = true;
+                        localGame = gameState;
+                        // 3. TUTAJ RYSUSZESZ STÓŁ!
+                        // Przekazujesz ten rozpakowany obiekt do swojej klasy rysującej ekran
+                        // np. renderer.DrawScreen(gameState);
+                        renderer.DrawGameScreen(localGame, messages, playerName);
+                        //Console.WriteLine("\n[Klient] Otrzymano nowy stan stołu! (Tura gracza: " + gameState.CurrentTurnSeatNumber + ")");
+                    }
+                }
+                catch (JsonException ex)
+                {
+                    // W razie gdyby paczka przyszła uszkodzona, nie wysadzamy całej gry
+                    Console.WriteLine($"[Błąd Klienta] Nie udało się rozpakować stanu gry: {ex.Message}");
+                }
                 
             }
         };
@@ -173,7 +222,7 @@ class Program
             await client.SendAsync(joinData);
 
             Console.WriteLine($"Witaj {playerName}! Jesteś w grze! Wpisz coś i wciśnij Enter.");
-            renderer.DrawLobbyScreen(messages, playerName);
+            renderer.DrawLobbyScreen(messages);
             while (true)
             {
                 
@@ -182,7 +231,37 @@ class Program
                 {
                     break;
                 }
+                if (input.StartsWith("/discard"))
+                {
+                    string[] parts = input.Split(' ');
+                    if(parts.Length == 2)
+                    {
+                        if (int.TryParse(parts[1], out int cardIndex))
+                        {
+                            if(cardIndex > localGame.MyHand.Count || cardIndex < 1)
+                            {
+                                messages.Add("[Gra] Niepoprawny numer karty! Użyj: /discard [numer]");
+                            }
+                            int realIndex = cardIndex - 1; 
 
+                            IPlayerAction myAction = new DiscardAction(localGame.Seat, realIndex);
+                            string actionJson = JsonSerializer.Serialize<IPlayerAction>(myAction);
+
+                            byte[] dataToSend = Encoding.UTF8.GetBytes($"ACTION|{actionJson}");
+                            await client.SendAsync(dataToSend);
+                        
+                            messages.Add("[Klient] Wysłano ruch do serwera...");
+                        }
+                        else
+                        {
+                            messages.Add("[Gra] Niepoprawny numer karty! Użyj: /discard [numer]");
+                        }
+                    }
+                    else
+                    {
+                        messages.Add("[Gra] wybierz kartę do odrzucenia");
+                    }
+                }
                 if (!string.IsNullOrWhiteSpace(input))
                 {
                     byte[] data = Encoding.UTF8.GetBytes(input);

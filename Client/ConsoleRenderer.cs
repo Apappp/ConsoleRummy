@@ -9,19 +9,19 @@ namespace ConsoleRummy
             Console.Clear();
             DrawTableSection(localGame);
             DrawHandSection(localGame);
-            DrawChatSection(chatMessages, playerName);
+            DrawChatSection(chatMessages);
         }
 
-        public void DrawLobbyScreen(List<string> chatMessages, string playerName)
+        public void DrawLobbyScreen(List<string> chatMessages)
         {
             Console.Clear();
             Console.WriteLine("--- POCZEKALNIA (LOBBY) ---");
             Console.WriteLine("Oczekiwanie na start gry przez Hosta...\n");
             
-            DrawChatSection(chatMessages, playerName);
+            DrawChatSection(chatMessages);
         }
 
-        private void DrawChatSection(List<string> chatMessages, string playerName)
+        private void DrawChatSection(List<string> chatMessages)
         {
             Console.WriteLine("--- CZAT ---");
             

@@ -23,7 +23,7 @@ namespace ConsoleRummy
             Shuffle();
         }
 
-        public Card Draw()
+        public Card? Draw()
         {
             if (cards.Count == 0) return null; 
         
@@ -32,13 +32,33 @@ namespace ConsoleRummy
             return drawnCard;
         }
 
+        public List<Card> DrawMany(int count)
+        {
+            List<Card> drawnCards = new List<Card>();
+            
+            for (int i = 0; i < count; i++)
+            {
+                Card? card = Draw();
+                if (card != null)
+                {
+                    drawnCards.Add(card);
+                }
+            }
+            
+            return drawnCards;
+        }
+
         public void Refill(List<Card> recycledCards)
         {
             cards.AddRange(recycledCards);
             Shuffle();
         }
 
-        public void Shuffle(){}
+        public void Shuffle(){
+            Random rng = new Random();
+            cards = cards.OrderBy(player => rng.Next()).ToList();
+        }
+        
 
         public int GetCardsCount()
         {

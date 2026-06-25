@@ -78,5 +78,19 @@ namespace ConsoleRummy
         {
             Deck = (Players.Count > 2) ? new Deck(2) : new Deck();
         }
+
+        public void DealTheCards()
+        {
+            foreach (var player in Players)
+            {
+                player.Hand = Deck.DrawMany(14);
+            }
+
+            Card startingCard = Deck.Draw();
+            if (startingCard != null)
+            {
+                DiscardPile.Add(startingCard);
+            }
+        }
     }
 }
