@@ -4,19 +4,67 @@ namespace ConsoleRummy
 {
     public class ConsoleRenderer
     {
-        public void DrawScreen(LocalGameState localGame)
+        public void DrawGameScreen(LocalGameState localGame, List<string> chatMessages, string playerName)
         {
             Console.Clear();
-            Console.WriteLine("--- STÓŁ ---");
-            Console.WriteLine($"Karty w talii: {localGame.CardsLeftInDeck}");
-            Console.WriteLine($"Na stosie odrzuconych leży: {localGame.TopDiscardCard?.Rank} {localGame.TopDiscardCard?.Suit}");
+            DrawTableSection(localGame);
+            DrawHandSection(localGame);
+            DrawChatSection(chatMessages, playerName);
+        }
+
+        public void DrawLobbyScreen(List<string> chatMessages, string playerName)
+        {
+            Console.Clear();
+            Console.WriteLine("--- POCZEKALNIA (LOBBY) ---");
+            Console.WriteLine("Oczekiwanie na start gry przez Hosta...\n");
             
+            DrawChatSection(chatMessages, playerName);
+        }
+
+        private void DrawChatSection(List<string> chatMessages, string playerName)
+        {
+            Console.WriteLine("--- CZAT ---");
+            
+            var lastMessages = chatMessages.TakeLast(10).ToList();
+            int emptyLines = 10 - lastMessages.Count;
+            
+            for (int i = 0; i < emptyLines; i++)
+            {
+                Console.WriteLine();
+            }
+
+            foreach (var msg in lastMessages)
+            {
+                Console.WriteLine(msg);
+            }
+            Console.WriteLine("------");
+            Console.Write(" > ");
+        }
+
+        private void DrawTableSection(LocalGameState localGame)
+        {
+            Console.WriteLine("--- STÓŁ ---");
+            Console.WriteLine($"Ruch wykonuje: {localGame.CurrentTurnPlayerName}");
+            Console.WriteLine($"Karty w talii: {localGame.CardsLeftInDeck}");
+            
+            if (localGame.TopDiscardCard != null)
+            {
+                Console.WriteLine($"Na stosie odrzuconych leży: {localGame.TopDiscardCard.Rank} {localGame.TopDiscardCard.Suit}");
+            }
+            else
+            {
+                Console.WriteLine("Na stosie odrzuconych leży: [Pusto]");
+            }
+        }
+
+        private void DrawHandSection(LocalGameState localGame)
+        {
             Console.WriteLine("\n--- TWOJA RĘKA ---");
             for (int i = 0; i < localGame.MyHand.Count; i++)
             {
                 Console.WriteLine($"{i + 1}. {localGame.MyHand[i].Rank} {localGame.MyHand[i].Suit}");
             }
-            Console.WriteLine("--------");
+            Console.WriteLine("------\n");
         }
     }
 }

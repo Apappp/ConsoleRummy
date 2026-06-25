@@ -57,6 +57,12 @@ namespace ConsoleRummy
                 CardsLeftInDeck = Deck.GetCardsCount() 
             };
         }
+        
+        public void NextTurn()
+        {
+            CurrentPlayerSeat++;
+            CurrentPlayerSeat %= Players.Count;
+        }
 
         public void ShufflePlayers()
         {

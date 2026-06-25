@@ -16,6 +16,7 @@ namespace ConsoleRummy
             Player player = table.Players.First(p => p.Seat == Seat);
             table.DiscardPile.Add(player.Hand[CardToDiscardIndex]);
             player.Hand.RemoveAt(CardToDiscardIndex);
+            table.NextTurn();
         }
         public int GetPlayerSeat() => Seat;
     }

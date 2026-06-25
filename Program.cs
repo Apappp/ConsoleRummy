@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks; // <--- Dodajemy obsługę asynchroniczności (Taski)
+using System.Threading.Tasks;
 using WatsonTcp;
 
 namespace ConsoleRummy;
@@ -75,7 +75,6 @@ class Program
                 string playerName = message.Split('|')[1];
                 string playerId = e.Client.Guid.ToString(); 
 
-                //Console.WriteLine($"[Serwer] Gracz dołączył: {playerName} (ID: {playerId})");
                 
                 lobbyPlayers.Add(new Player(playerId, playerName));
 
@@ -98,6 +97,10 @@ class Program
 
                     table.Players = lobbyPlayers;
                     table.ChangeState(new DealingState());
+                }
+                else if(message == "/draw")
+                {
+                    
                 }
                 else
                 {
@@ -137,6 +140,8 @@ class Program
     static async Task RunClientLoop(string ipAddress, string playerName)
     {
         WatsonTcpClient client = new WatsonTcpClient(ipAddress, 9000);
+        ConsoleRenderer renderer = new ConsoleRenderer();
+        List<string> messages = new List<string>();
 
         client.Events.ServerConnected += (sender, e) => 
         {
@@ -149,15 +154,14 @@ class Program
             if (message.StartsWith("MESSAGE|"))
             {
                 string trimmedMessage = message.Split('|')[1];
-                Console.WriteLine($"\n{trimmedMessage}");
-
+                messages.Add(trimmedMessage);
+                renderer.DrawLobbyScreen(messages, playerName);
             }
             else
             {
                 Console.WriteLine($"\n>> [STÓŁ]: {message}");
                 
             }
-            Console.Write("Wpisz komendę: ");
         };
 
         try
@@ -169,10 +173,10 @@ class Program
             await client.SendAsync(joinData);
 
             Console.WriteLine($"Witaj {playerName}! Jesteś w grze! Wpisz coś i wciśnij Enter.");
-            
+            renderer.DrawLobbyScreen(messages, playerName);
             while (true)
             {
-                Console.Write("Wpisz komendę: ");
+                
                 string input = Console.ReadLine() ?? "";
                 if (input.ToLower() == "wyjscie")
                 {
