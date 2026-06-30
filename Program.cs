@@ -273,6 +273,45 @@ class Program
                     byte[] dataToSend = Encoding.UTF8.GetBytes($"ACTION|{actionJson}");
                     await client.SendAsync(dataToSend);
                 }
+                else if (input.StartsWith("/swap"))
+                {
+                    string[] parts = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length == 3) 
+                    {
+                        if (int.TryParse(parts[1], out int card1Index) && int.TryParse(parts[2], out int card2Index))
+                        {
+                            if (card1Index < 1 || card1Index > localGame.MyHand.Count || 
+                                card2Index < 1 || card2Index > localGame.MyHand.Count)
+                            {
+                                messages.Add("Niepoprawne numery kart! Karty poza zakresem.");
+                                continue;
+                            }
+
+                            if (card1Index == card2Index)
+                            {
+                                messages.Add("Podano dwie takie same karty!");
+                                continue; 
+                            }
+
+                            int realIndex1 = card1Index - 1; 
+                            int realIndex2 = card2Index - 1;
+
+                            IPlayerAction myAction = new SwapCardsAction(localGame.Seat, realIndex1, realIndex2);
+                            string actionJson = JsonSerializer.Serialize<IPlayerAction>(myAction);
+
+                            byte[] dataToSend = Encoding.UTF8.GetBytes($"ACTION|{actionJson}");
+                            await client.SendAsync(dataToSend);
+                        }
+                        else
+                        {
+                            messages.Add("Błąd: Numery kart muszą być liczbami! Użyj: /swap [numer1] [numer2]");
+                        }
+                    }
+                    else
+                    {
+                        messages.Add("Błąd: Podaj dokładnie dwie karty! Użyj: /swap [numer1] [numer2]");
+                    }
+                }
                 else if (!string.IsNullOrWhiteSpace(input))
                 {
                     byte[] data = Encoding.UTF8.GetBytes(input);

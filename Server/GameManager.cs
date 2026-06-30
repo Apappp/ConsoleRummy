@@ -11,6 +11,7 @@ namespace ConsoleRummy
         public ICardDeck Deck;
         public List<Card> DiscardPile {get; private set;} = new List<Card>();
         public int CurrentPlayerSeat {get; set;} = 1;
+        public Dictionary<int, Meld> Melds;
 
         public GameManager()
         {

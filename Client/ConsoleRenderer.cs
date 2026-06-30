@@ -62,9 +62,21 @@ namespace ConsoleRummy
             Console.WriteLine("\n--- TWOJA RĘKA ---");
             for (int i = 0; i < localGame.MyHand.Count; i++)
             {
-                Console.WriteLine($"{i + 1}. {localGame.MyHand[i].Rank} {localGame.MyHand[i].Suit}");
+                string cardString = $"[{i + 1}] {localGame.MyHand[i].Rank}{localGame.MyHand[i].Suit}";
+                
+                Console.Write(cardString.PadRight(12));
+
+                if ((i + 1) % 7 == 0)
+                {
+                    Console.WriteLine();
+                }
             }
-            Console.WriteLine("------\n");
+            
+            if (localGame.MyHand.Count > 0 && localGame.MyHand.Count % 7 != 0)
+            {
+                Console.WriteLine();
+            }
+            
         }
     }
 }
