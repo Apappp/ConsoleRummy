@@ -20,7 +20,7 @@ namespace ConsoleRummy
             if(player == null)
                 throw new GameLogicException("BŁĄD: Nie znaleziono gracza przy stole!");
             if(Card1Index < 0 || Card1Index >= player.Hand.Count || Card2Index < 0 || Card2Index >= player.Hand.Count)
-                throw new GameLogicException("BŁĄD: Podano index spoza zakresu!");
+                throw new GameLogicException("Podano index spoza zakresu!");
             
             Card tempCard = player.Hand[Card1Index];
             player.Hand[Card1Index] = player.Hand[Card2Index];

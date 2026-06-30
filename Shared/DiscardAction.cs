@@ -20,9 +20,9 @@ namespace ConsoleRummy
             if(player.Seat != table.CurrentPlayerSeat)
                 throw new GameLogicException("Poczekaj na swoją kolej..");
             if (!player.HasDrawn)
-                throw new GameLogicException("Błąd: Nie ciągnąłeś karty");
+                throw new GameLogicException("Nie ciągnąłeś karty..");
             if(CardToDiscardIndex < 0 || CardToDiscardIndex >= player.Hand.Count)
-                throw new GameLogicException("BŁĄD: Nie posiadasz takiej karty!");
+                throw new GameLogicException("Nie posiadasz takiej karty!");
 
             table.DiscardPile.Add(player.Hand[CardToDiscardIndex]);
             player.Hand.RemoveAt(CardToDiscardIndex);

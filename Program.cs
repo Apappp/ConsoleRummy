@@ -104,11 +104,13 @@ class Program
                     {
                         byte[] responseBytes = Encoding.UTF8.GetBytes($"MESSAGE|{ex.Message}");
                         await server.SendAsync(e.Client.Guid, responseBytes);  
+                        await BroadcastGameState(server, table);
                     }
                     catch(Exception ex)
                     {
                         byte[] responseBytes = Encoding.UTF8.GetBytes($"MESSAGE|Krytyczny błąd serwera:{ex.Message}, {ex.StackTrace}");
                         await server.SendAsync(e.Client.Guid, responseBytes);  
+                        await BroadcastGameState(server, table);
                     }
                 }
             }
@@ -231,93 +233,82 @@ class Program
 
             Console.WriteLine($"Witaj {playerName}! Jesteś w grze! Wpisz coś i wciśnij Enter.");
             renderer.DrawLobbyScreen(messages);
+            
+            async Task SendActionAsync(IPlayerAction action)
+            {
+                string actionJson = JsonSerializer.Serialize<IPlayerAction>(action);
+                byte[] dataToSend = Encoding.UTF8.GetBytes($"ACTION|{actionJson}");
+                await client.SendAsync(dataToSend);
+            }
+
             while (true)
             {
-                
                 string input = Console.ReadLine() ?? "";
-                if (input.StartsWith("/discard"))
-                {
-                    string[] parts = input.Split(' ');
-                    if(parts.Length == 2)
-                    {
-                        if (int.TryParse(parts[1], out int cardIndex))
-                        {
-                            if(cardIndex > localGame.MyHand.Count || cardIndex < 1)
-                            {
-                                messages.Add("[Gra] Niepoprawny numer karty! Użyj: /discard [numer]");
-                            }
-                            int realIndex = cardIndex - 1; 
+                
+                if (string.IsNullOrWhiteSpace(input)) continue;
 
-                            IPlayerAction myAction = new DiscardAction(localGame.Seat, realIndex);
-                            string actionJson = JsonSerializer.Serialize<IPlayerAction>(myAction);
-
-                            byte[] dataToSend = Encoding.UTF8.GetBytes($"ACTION|{actionJson}");
-                            await client.SendAsync(dataToSend);
-                        
-                        }
-                        else
-                        {
-                            messages.Add("Błąd: Niepoprawny numer karty! Użyj: /discard [numer]");
-                        }
-                    }
-                    else
-                    {
-                        messages.Add("Błąd: wybierz kartę do odrzucenia");
-                    }
-                }
-                else if (input.StartsWith("/draw"))
-                {
-                    IPlayerAction myAction = new DrawCardAction(localGame.Seat);
-                    string actionJson = JsonSerializer.Serialize<IPlayerAction>(myAction);
-
-                    byte[] dataToSend = Encoding.UTF8.GetBytes($"ACTION|{actionJson}");
-                    await client.SendAsync(dataToSend);
-                }
-                else if (input.StartsWith("/swap"))
-                {
-                    string[] parts = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                    if (parts.Length == 3) 
-                    {
-                        if (int.TryParse(parts[1], out int card1Index) && int.TryParse(parts[2], out int card2Index))
-                        {
-                            if (card1Index < 1 || card1Index > localGame.MyHand.Count || 
-                                card2Index < 1 || card2Index > localGame.MyHand.Count)
-                            {
-                                messages.Add("Niepoprawne numery kart! Karty poza zakresem.");
-                                continue;
-                            }
-
-                            if (card1Index == card2Index)
-                            {
-                                messages.Add("Podano dwie takie same karty!");
-                                continue; 
-                            }
-
-                            int realIndex1 = card1Index - 1; 
-                            int realIndex2 = card2Index - 1;
-
-                            IPlayerAction myAction = new SwapCardsAction(localGame.Seat, realIndex1, realIndex2);
-                            string actionJson = JsonSerializer.Serialize<IPlayerAction>(myAction);
-
-                            byte[] dataToSend = Encoding.UTF8.GetBytes($"ACTION|{actionJson}");
-                            await client.SendAsync(dataToSend);
-                        }
-                        else
-                        {
-                            messages.Add("Błąd: Numery kart muszą być liczbami! Użyj: /swap [numer1] [numer2]");
-                        }
-                    }
-                    else
-                    {
-                        messages.Add("Błąd: Podaj dokładnie dwie karty! Użyj: /swap [numer1] [numer2]");
-                    }
-                }
-                else if (!string.IsNullOrWhiteSpace(input))
+                if (!isGameStarted)
                 {
                     byte[] data = Encoding.UTF8.GetBytes(input);
                     await client.SendAsync(data);
+                    continue;   
                 }
+
+                string[] parts = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                string command = parts[0].ToLower();
+
+                switch (command)
+                {
+                    case "/discard":
+                        if (parts.Length != 2)
+                        {
+                            messages.Add("Wybierz kartę do odrzucenia. Użyj: /discard [numer]");
+                            break; 
+                        }
+                        if (!int.TryParse(parts[1], out int cardIndex))
+                        {
+                            messages.Add("Niepoprawny numer karty! Użyj: /discard [numer]");
+                            break;
+                        }
+
+                        await SendActionAsync(new DiscardAction(localGame.Seat, cardIndex - 1));
+                        break;
+
+                    case "/draw":
+                        await SendActionAsync(new DrawCardAction(localGame.Seat));
+                        break;
+
+                    case "/swap":
+                        if (parts.Length != 3) 
+                        {
+                            messages.Add("Podaj dokładnie dwie karty! Użyj: /swap [numer1] [numer2]");
+                            break;
+                        }
+                        if (!int.TryParse(parts[1], out int c1) || !int.TryParse(parts[2], out int c2))
+                        {
+                            messages.Add("Numery kart muszą być liczbami! Użyj: /swap [numer1] [numer2]");
+                            break;
+                        }
+
+                        await SendActionAsync(new SwapCardsAction(localGame.Seat, c1 - 1, c2 - 1));
+                        break;
+
+                    default:
+                        if (command.StartsWith("/"))
+                        {
+                            messages.Add($"Nieznana komenda");
+                        }
+                        else 
+                        {
+                            byte[] data = Encoding.UTF8.GetBytes(input);
+                            await client.SendAsync(data);
+                        }
+                        break;
+                }
+
+                renderer.DrawGameScreen(localGame, messages, playerName);
             }
+            
         }
         catch (Exception ex)
         {
