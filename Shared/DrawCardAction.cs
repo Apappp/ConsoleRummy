@@ -22,7 +22,18 @@ namespace ConsoleRummy
             if(player.HasDrawn)
                 throw new GameLogicException("BŁĄD: Ciągnąłeś już kartę");
             
-            player.Hand.Add(table.Deck.Draw());
+            Card? card = table.Deck.Draw();
+            if(card == null)
+            {
+                Card topDiscard = table.DiscardPile.Last();
+                table.DiscardPile.RemoveAt(table.DiscardPile.Count - 1);
+                table.Deck.Refill(table.DiscardPile);
+
+                table.DiscardPile.Clear();
+                table.DiscardPile.Add(topDiscard);
+                card = table.Deck.Draw();
+            }
+            player.Hand.Add(card);
             player.HasDrawn = true;
             
         }

@@ -7,6 +7,7 @@ namespace ConsoleRummy
     {
         Card? Draw();
         List<Card> DrawMany(int count);
+        void Refill(List<Card> recycledCards);
         void Shuffle();
         int GetCardsCount();
     }
