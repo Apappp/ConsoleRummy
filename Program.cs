@@ -96,8 +96,20 @@ class Program
 
                 if (action != null)
                 {
-                    action.ExecuteAction(table);
-                    await BroadcastGameState(server, table);
+                    try{
+                        action.ExecuteAction(table);
+                        await BroadcastGameState(server, table);
+                    }
+                    catch(GameLogicException ex)
+                    {
+                        byte[] responseBytes = Encoding.UTF8.GetBytes($"MESSAGE|{ex.Message}");
+                        await server.SendAsync(e.Client.Guid, responseBytes);  
+                    }
+                    catch(Exception ex)
+                    {
+                        byte[] responseBytes = Encoding.UTF8.GetBytes($"MESSAGE|Krytyczny błąd serwera:{ex.Message}, {ex.StackTrace}");
+                        await server.SendAsync(e.Client.Guid, responseBytes);  
+                    }
                 }
             }
             else if (message.StartsWith("/"))
@@ -223,10 +235,6 @@ class Program
             {
                 
                 string input = Console.ReadLine() ?? "";
-                if (input.ToLower() == "wyjscie")
-                {
-                    break;
-                }
                 if (input.StartsWith("/discard"))
                 {
                     string[] parts = input.Split(' ');
@@ -242,24 +250,30 @@ class Program
 
                             IPlayerAction myAction = new DiscardAction(localGame.Seat, realIndex);
                             string actionJson = JsonSerializer.Serialize<IPlayerAction>(myAction);
-                            messages.Add(actionJson);
 
                             byte[] dataToSend = Encoding.UTF8.GetBytes($"ACTION|{actionJson}");
                             await client.SendAsync(dataToSend);
                         
-                            messages.Add("[Klient] Wysłano ruch do serwera...");
                         }
                         else
                         {
-                            messages.Add("[Gra] Niepoprawny numer karty! Użyj: /discard [numer]");
+                            messages.Add("Błąd: Niepoprawny numer karty! Użyj: /discard [numer]");
                         }
                     }
                     else
                     {
-                        messages.Add("[Gra] wybierz kartę do odrzucenia");
+                        messages.Add("Błąd: wybierz kartę do odrzucenia");
                     }
                 }
-                if (!string.IsNullOrWhiteSpace(input))
+                else if (input.StartsWith("/draw"))
+                {
+                    IPlayerAction myAction = new DrawCardAction(localGame.Seat);
+                    string actionJson = JsonSerializer.Serialize<IPlayerAction>(myAction);
+
+                    byte[] dataToSend = Encoding.UTF8.GetBytes($"ACTION|{actionJson}");
+                    await client.SendAsync(dataToSend);
+                }
+                else if (!string.IsNullOrWhiteSpace(input))
                 {
                     byte[] data = Encoding.UTF8.GetBytes(input);
                     await client.SendAsync(data);

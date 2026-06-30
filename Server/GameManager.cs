@@ -44,14 +44,14 @@ namespace ConsoleRummy
 
         public LocalGameState GetStateForPlayer(Guid networkId)
         {
-            Player player = Players.First(p => p.NetworkId == networkId.ToString());
+            Player? player = Players.FirstOrDefault(p => p.NetworkId == networkId.ToString());
             
             if (player == null) return null; 
 
             return new LocalGameState
             {
                 Seat = player.Seat,
-                CurrentTurnPlayerName = Players.First(p => p.Seat == CurrentPlayerSeat).Nickname,
+                CurrentTurnPlayerName = Players.FirstOrDefault(p => p.Seat == CurrentPlayerSeat).Nickname,
                 MyHand = player.Hand, 
                 TopDiscardCard = DiscardPile.Count > 0 ? DiscardPile.Last() : null,
                 CardsLeftInDeck = Deck.GetCardsCount() 
@@ -60,8 +60,7 @@ namespace ConsoleRummy
         
         public void NextTurn()
         {
-            CurrentPlayerSeat++;
-            CurrentPlayerSeat %= Players.Count;
+            CurrentPlayerSeat = (CurrentPlayerSeat % Players.Count) + 1;
         }
 
         public void ShufflePlayers()

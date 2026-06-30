@@ -16,11 +16,17 @@ namespace ConsoleRummy
         {
             Player? player = table.Players.FirstOrDefault(p => p.Seat == Seat);
             if(player == null)
-            {
-                return;
-            }
+                throw new GameLogicException("BŁĄD: Nie znaleziono gracza przy stole!");
+            if(player.Seat != table.CurrentPlayerSeat)
+                throw new GameLogicException("Poczekaj na swoją kolej..");
+            if (!player.HasDrawn)
+                throw new GameLogicException("Błąd: Nie ciągnąłeś karty");
+            if(CardToDiscardIndex < 0 || CardToDiscardIndex >= player.Hand.Count)
+                throw new GameLogicException("BŁĄD: Nie posiadasz takiej karty!");
+
             table.DiscardPile.Add(player.Hand[CardToDiscardIndex]);
             player.Hand.RemoveAt(CardToDiscardIndex);
+            player.HasDrawn = false;
             table.NextTurn();
         }
     }

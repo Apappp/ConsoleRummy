@@ -4,7 +4,9 @@ namespace ConsoleRummy
 {
     public class DrawCardAction : IPlayerAction
     {
-        private int Seat {get; set;}
+        public int Seat {get; set;}
+
+        public DrawCardAction(){}
 
         public DrawCardAction(int seat)
         {
@@ -12,8 +14,17 @@ namespace ConsoleRummy
         }
         public void ExecuteAction(GameManager table)
         {
-            Player player = table.Players.First(p => p.Seat == Seat);
+            Player? player = table.Players.FirstOrDefault(p => p.Seat == Seat);
+            if(player == null)
+                throw new GameLogicException("BŁĄD: Nie znaleziono gracza przy stole!");
+            if(player.Seat != table.CurrentPlayerSeat)
+                throw new GameLogicException("Poczekaj na swoją kolej..");
+            if(player.HasDrawn)
+                throw new GameLogicException("BŁĄD: Ciągnąłeś już kartę");
+            
             player.Hand.Add(table.Deck.Draw());
+            player.HasDrawn = true;
+            
         }
         public int GetPlayerSeat() => Seat;
     }

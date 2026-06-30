@@ -8,6 +8,7 @@ namespace ConsoleRummy
         public string Nickname {get; private set; } 
         public int Seat {get; set; }
         public List<Card> Hand {get; set;}
+        public bool HasDrawn {get; set;}
 
         public Player(string networkId, string name)
         {
