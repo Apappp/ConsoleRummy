@@ -4,8 +4,9 @@ namespace ConsoleRummy
 {
     public class DiscardAction : IPlayerAction
     {
-        private int Seat {get; set;}
-        private int CardToDiscardIndex { get; set;}
+        public int Seat {get; set;}
+        public int CardToDiscardIndex { get; set;}
+        public DiscardAction(){}
         public DiscardAction(int seat, int cardToDiscardIndex)
         {
             Seat = seat;
@@ -13,11 +14,14 @@ namespace ConsoleRummy
         }
         public void ExecuteAction(GameManager table)
         {
-            Player player = table.Players.First(p => p.Seat == Seat);
+            Player? player = table.Players.FirstOrDefault(p => p.Seat == Seat);
+            if(player == null)
+            {
+                return;
+            }
             table.DiscardPile.Add(player.Hand[CardToDiscardIndex]);
             player.Hand.RemoveAt(CardToDiscardIndex);
             table.NextTurn();
         }
-        public int GetPlayerSeat() => Seat;
     }
 }

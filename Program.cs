@@ -197,16 +197,12 @@ class Program
                     {
                         isGameStarted = true;
                         localGame = gameState;
-                        // 3. TUTAJ RYSUSZESZ STÓŁ!
-                        // Przekazujesz ten rozpakowany obiekt do swojej klasy rysującej ekran
-                        // np. renderer.DrawScreen(gameState);
+
                         renderer.DrawGameScreen(localGame, messages, playerName);
-                        //Console.WriteLine("\n[Klient] Otrzymano nowy stan stołu! (Tura gracza: " + gameState.CurrentTurnSeatNumber + ")");
                     }
                 }
                 catch (JsonException ex)
                 {
-                    // W razie gdyby paczka przyszła uszkodzona, nie wysadzamy całej gry
                     Console.WriteLine($"[Błąd Klienta] Nie udało się rozpakować stanu gry: {ex.Message}");
                 }
                 
@@ -246,6 +242,7 @@ class Program
 
                             IPlayerAction myAction = new DiscardAction(localGame.Seat, realIndex);
                             string actionJson = JsonSerializer.Serialize<IPlayerAction>(myAction);
+                            messages.Add(actionJson);
 
                             byte[] dataToSend = Encoding.UTF8.GetBytes($"ACTION|{actionJson}");
                             await client.SendAsync(dataToSend);

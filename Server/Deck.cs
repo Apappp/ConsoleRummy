@@ -8,7 +8,7 @@ namespace ConsoleRummy
 
         public Deck(int numOfDecks = 1)
         {
-            string[] suits = { "Kier", "Karo", "Trefl", "Pik" };
+            string[] suits = { "♥", "♦", "♣", "♠" };
             string[] ranks = { "2", "3", "4", "5", "6", "7", "8", "9", "10", "Walet", "Dama", "Król", "As" };
             for(int i = 0; i < numOfDecks; i++){
                 foreach (string suit in suits)
